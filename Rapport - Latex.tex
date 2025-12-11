@@ -1,0 +1,127 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{Projet : Reconstruction 3D à partir de Projections 2D \\ 
+{\large Rapport d'avancement}}
+\author{---}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Ce projet s'inscrit dans le cadre du module “Reconstruction 3D à partir de projections 2D”
+proposé à l’INSA. L’objectif global est d’explorer les méthodes mathématiques permettant
+de reconstruire une forme à partir de projections partielles, depuis la tomographie médicale
+jusqu’aux illusions d’optique telles que les \emph{ambiguous cylinders} de Sugihara 
+\cite{Sugihara}.  
+
+Dans ce rapport, nous présentons l’ensemble du travail réalisé jusqu’à présent :
+\begin{itemize}
+    \item étude de la transformée de Radon et construction de sinogrammes,
+    \item implémentation de la rétroprojection filtrée,
+    \item implémentation d’un algorithme ART,
+    \item premières recherches sur les objets ambigus de Sugihara.
+\end{itemize}
+
+\section{Transformée de Radon}
+
+\subsection{Définition}
+
+La transformée de Radon d’une image $f(x,y)$ consiste à intégrer cette image le long de
+droites paramétrées par un angle $\theta$ et une distance $\rho$ :
+\[
+R f(\rho,\theta) = \int_{-\infty}^{\infty} f(x \cos \theta - y \sin\theta + \rho,\,
+x \sin\theta + y \cos\theta)\, dx.
+\]
+
+\subsection{Construction du sinogramme}
+
+Nous avons implémenté une version discrète de la transformée :  
+pour chaque angle $\theta$ et pour chaque ligne projetée, nous \textbf{sommmeons les pixels rencontrés}.  
+Le résultat est stocké dans une matrice $(\rho, \theta)$ formant le sinogramme.
+
+\begin{itemize}
+    \item boucle sur les angles $\theta$,
+    \item pour chaque angle, rotation de l’image ou interpolation,
+    \item somme des intensités pixel par pixel,
+    \item stockage dans la matrice sinogramme.
+\end{itemize}
+
+Nous avons vérifié visuellement le bon comportement du sinogramme à l’aide de motifs simples
+(disque, carré, lettres).
+
+\section{Rétroprojection Filtrée}
+
+À partir du sinogramme, nous avons implémenté la reconstruction par \textbf{rétroprojection filtrée}
+(FBP — Filtered Back Projection).  
+La méthode se décompose en deux étapes :
+
+\begin{enumerate}
+    \item \textbf{Filtrage de Ram-Lak} : convolution de chaque projection avec un filtre haute fréquence.
+    \item \textbf{Rétroprojection} : pour chaque angle $\theta$, redistribution des valeurs filtrées 
+    le long des lignes correspondantes dans l’espace image.
+\end{enumerate}
+
+Cette méthode fournit une reconstruction satisfaisante mais sensible au bruit, ce que l’on observe déjà sur nos tests.
+
+\section{Méthode ART (Algebraic Reconstruction Technique)}
+
+Nous avons également codé une version simple de l’algorithme ART, qui repose sur la mise à jour
+itérative de l’image $x$ par :
+
+\[
+x^{(k+1)} = x^{(k)} + \lambda \frac{p_i - \langle a_i, x^{(k)} \rangle}{\|a_i\|^2} a_i
+\]
+
+où $p_i$ est la $i$-ème projection et $a_i$ la ligne correspondante de la matrice système.
+
+ART converge lentement mais donne souvent des résultats plus lisses que la FBP.
+
+\section{Ambiguous Cylinders : premières recherches}
+
+Nous avons commencé à étudier les objets ambigus de Sugihara, en particulier :
+
+\begin{itemize}
+    \item visionnage et analyse de vidéos explicatives,
+    \item étude des contraintes géométriques : projections orthographiques différentes créant des silhouettes distinctes,
+    \item compréhension que ces objets reposent sur une approximation géométrique stricte,
+    basée sur une forme 3D soigneusement déformée.
+\end{itemize}
+
+À ce stade, nous avons commencé à relier la problématique à la tomographie :  
+\emph{les silhouettes imposées peuvent être interprétées comme des projections contraintes}.
+
+\section{Conclusion}
+
+Nous disposons désormais :
+\begin{itemize}
+    \item d’un pipeline complet : Image $\rightarrow$ Sinogramme $\rightarrow$ Reconstruction (FBP et ART),
+    \item d’une bonne compréhension des illusions de Sugihara,
+    \item des bases nécessaires pour la suite : optimisation de formes 3D sous contraintes de projection.
+\end{itemize}
+
+Les prochaines étapes incluront l’optimisation numérique d’une forme produisant deux silhouettes
+distinctes selon deux angles de vue.
+
+\begin{thebibliography}{9}
+
+\bibitem{Sugihara}
+K. Sugihara, \emph{Ambiguous cylinders: A new class of impossible objects}, 
+Computer Aided Geometric Design, 2016.
+
+\bibitem{Kak}
+A. C. Kak, M. Slaney, \emph{Principles of Computerized Tomographic Imaging}, SIAM, 2001.
+
+\bibitem{Herman}
+G. Herman, \emph{Fundamentals of Computerized Tomography}, Springer, 2009.
+
+\end{thebibliography}
+
+\end{document}
